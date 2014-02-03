@@ -36,8 +36,9 @@ class HTTPClient(object):
     #def get_host_port(self,url):
 
     def connect(self, host, port):
-        # use sockets!
-        return None
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+        s.connect(host, port)
+        return s
 
     def get_code(self, data):
         return None
@@ -61,6 +62,12 @@ class HTTPClient(object):
         return str(buffer)
 
     def GET(self, url, args=None):
+        urlInfo = urlparse(url)
+        port = 80 if urlInfo.scheme == 'http' else 443
+        s = self.connect(urlInfo.netloc, port)
+        
+        s.sendall("GET %s\r\n")
+        s.sendall("Host: %s" % urlInfo.netloc)
         code = 500
         body = ""
         return HTTPRequest(code, body)
