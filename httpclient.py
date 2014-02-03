@@ -23,6 +23,7 @@ import socket
 import re
 # you may use urllib to encode data appropriately
 import urllib
+import urlparse
 
 def help():
     print "httpclient.py [GET/POST] [URL]\n"
@@ -37,17 +38,22 @@ class HTTPClient(object):
 
     def connect(self, host, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
-        s.connect(host, port)
+        print("Connecting to %s:%s\n" % (host, port))
+        s.connect((host, port))
         return s
 
     def get_code(self, data):
-        return None
+        headers = data.split("\n")
+        responseStatus = headers[0].split(" ")
+        return int(responseStatus[1])
 
     def get_headers(self,data):
-        return None
+        response = data.split("\r\n\r\n")
+        return response[0]
 
     def get_body(self, data):
-        return None
+        response = data.split("\r\n\r\n")
+        return response[1]
 
     # read everything from the socket
     def recvall(self, sock):
@@ -59,17 +65,26 @@ class HTTPClient(object):
                 buffer.extend(part)
             else:
                 done = not part
+        sock.close()
         return str(buffer)
 
     def GET(self, url, args=None):
-        urlInfo = urlparse(url)
-        port = 80 if urlInfo.scheme == 'http' else 443
-        s = self.connect(urlInfo.netloc, port)
+        urlInfo = urlparse.urlparse(url)
+        port = urlInfo.port or 80
+        path = urlInfo.path or "/"
+        s = self.connect(urlInfo.hostname, port)
         
-        s.sendall("GET %s\r\n")
-        s.sendall("Host: %s" % urlInfo.netloc)
-        code = 500
-        body = ""
+        s.sendall("GET %s HTTP/1.1\r\n" % path)
+        s.sendall("Host: %s\r\n" % urlInfo.hostname)
+        s.sendall("Accept: text/html\r\n")
+        s.sendall("Connection: close\r\n")
+        s.sendall("\r\n")
+        
+        response = self.recvall(s)
+        headers = self.get_headers(response)
+        code = self.get_code(headers)
+        body = self.get_body(response)
+        
         return HTTPRequest(code, body)
 
     def POST(self, url, args=None):
@@ -90,6 +105,6 @@ if __name__ == "__main__":
         help()
         sys.exit(1)
     elif (len(sys.argv) == 3):
-        print client.command( sys.argv[1], sys.argv[2] )
+        print client.command( sys.argv[2], sys.argv[1] )
     else:
         print client.command( command, sys.argv[1] )    
