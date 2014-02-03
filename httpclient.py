@@ -38,10 +38,10 @@ class HTTPClient(object):
 
     def connect(self, host, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
-        print("Connecting to %s:%s\n" % (host, port))
         s.connect((host, port))
         return s
 
+    # takes in the raw headers, and returns the response code
     def get_code(self, data):
         headers = data.split("\n")
         responseStatus = headers[0].split(" ")
@@ -88,8 +88,26 @@ class HTTPClient(object):
         return HTTPRequest(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        urlInfo = urlparse.urlparse(url)
+        port = urlInfo.port or 80
+        path = urlInfo.path or "/"
+        params = "" if args == None else urllib.urlencode(args)
+        length = len(params)
+        
+        s = self.connect(urlInfo.hostname, port)
+        
+        s.sendall("POST %s HTTP/1.1\r\n" % path)
+        s.sendall("Host: %s\r\n" % urlInfo.hostname)
+        s.sendall("Content-Length: %s\r\n" % length)
+        s.sendall("Content-Type: application/x-www-form-urlencoded\r\n")
+        s.sendall("\r\n")
+        s.sendall("%s\r\n" % params)
+        
+        response = self.recvall(s)
+        headers = self.get_headers(response)
+        code = self.get_code(headers)
+        body = self.get_body(response)
+        
         return HTTPRequest(code, body)
 
     def command(self, url, command="GET", args=None):
