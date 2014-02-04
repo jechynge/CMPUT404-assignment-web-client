@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright 2013 Abram Hindle
+# Copyright 2013 Abram Hindle, Jordan Ching
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import re
 # you may use urllib to encode data appropriately
 import urllib
 import urlparse
+import ast
 
 def help():
-    print "httpclient.py [GET/POST] [URL]\n"
+    print "httpclient.py [GET/POST] [URL] [ARGS]"
+    print "ARGS must be an associative array (e.g \"{'a':'1','b':'something else')\")\n"
 
 class HTTPRequest(object):
     def __init__(self, code=200, body=""):
@@ -47,10 +49,12 @@ class HTTPClient(object):
         responseStatus = headers[0].split(" ")
         return int(responseStatus[1])
 
+    # takes in raw response, gets the part above the double line break (headers)
     def get_headers(self,data):
         response = data.split("\r\n\r\n")
         return response[0]
 
+    # takes in raw response, gets the part below the double line break (body)
     def get_body(self, data):
         response = data.split("\r\n\r\n")
         return response[1]
@@ -72,12 +76,13 @@ class HTTPClient(object):
         urlInfo = urlparse.urlparse(url)
         port = urlInfo.port or 80
         path = urlInfo.path or "/"
+        if(args != None):
+            path = "%s?%s" % (path,urllib.urlencode(args))
         s = self.connect(urlInfo.hostname, port)
         
         s.sendall("GET %s HTTP/1.1\r\n" % path)
         s.sendall("Host: %s\r\n" % urlInfo.hostname)
         s.sendall("Accept: text/html\r\n")
-        s.sendall("Connection: close\r\n")
         s.sendall("\r\n")
         
         response = self.recvall(s)
@@ -124,5 +129,8 @@ if __name__ == "__main__":
         sys.exit(1)
     elif (len(sys.argv) == 3):
         print client.command( sys.argv[2], sys.argv[1] )
+    elif (len(sys.argv) == 4):
+        args = ast.literal_eval(sys.argv[3])
+        print client.command( sys.argv[2], sys.argv[1], args)
     else:
         print client.command( command, sys.argv[1] )    
