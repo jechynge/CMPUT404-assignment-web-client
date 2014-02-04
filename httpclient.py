@@ -122,17 +122,28 @@ class HTTPClient(object):
             return self.POST( url, args )
         else:
             return self.GET( url, args )
+        
     
 if __name__ == "__main__":
     client = HTTPClient()
-    command = "GET"
+    result = None
+    url = ""
     if (len(sys.argv) <= 1):
         help()
         sys.exit(1)
     elif (len(sys.argv) == 3):
-        print client.command( sys.argv[2], sys.argv[1] )
+        result = client.command( sys.argv[2], sys.argv[1] )
+        url = sys.argv[2]
     elif (len(sys.argv) == 4):
         args = ast.literal_eval(sys.argv[3])
-        print client.command( sys.argv[2], sys.argv[1], args)
+        result = client.command( sys.argv[2], sys.argv[1], args)
+        url = sys.argv[2]
     else:
-        print client.command( command, sys.argv[1] )    
+        result = client.command( sys.argv[1] )
+        url = sys.argv[1]
+        
+    print("====== BEGIN RESPONSE BODY ======")
+    print(result.body)
+    print("======= END RESPONSE BODY =======")
+    print("Requested URL: %s" % url)
+    print("Response result: %s" % result.code)
