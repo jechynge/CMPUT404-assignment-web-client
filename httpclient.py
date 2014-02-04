@@ -83,6 +83,7 @@ class HTTPClient(object):
         s.sendall("GET %s HTTP/1.1\r\n" % path)
         s.sendall("Host: %s\r\n" % urlInfo.hostname)
         s.sendall("Accept: text/html\r\n")
+        s.sendall("Connection: close\r\n")
         s.sendall("\r\n")
         
         response = self.recvall(s)
@@ -104,6 +105,7 @@ class HTTPClient(object):
         s.sendall("POST %s HTTP/1.1\r\n" % path)
         s.sendall("Host: %s\r\n" % urlInfo.hostname)
         s.sendall("Content-Length: %s\r\n" % length)
+        s.sendall("Connection: close\r\n")
         s.sendall("Content-Type: application/x-www-form-urlencoded\r\n")
         s.sendall("\r\n")
         s.sendall("%s\r\n" % params)
